@@ -120,8 +120,9 @@ class Controller(object):
     #   |           |
     #   -------------
     def getPhoto(self, resolution=3, cut_delta=10, show=0):
-        # self.video_device.unsubscribeAllInstance("cam")
-        self.video_device.unsubscribe("cam")
+	name = "cam"        
+	self.video_device.unsubscribeAllInstances(name)
+	self.video_device.unsubscribe(name)
         cam_id = 1
         if resolution == 2:
             size = (480, 640)
@@ -129,15 +130,15 @@ class Controller(object):
             size = (960, 1280)
         color_space = 13  # format RGB
         fps = 30
-        cam = self.video_device.subscribeCamera("cam", cam_id, resolution, color_space, fps)  # zabrani kamery
-        image = self.video_device.getImageRemote("cam")  # porizeni snimku
-        im = image[6]
+        cam = self.video_device.subscribeCamera(name, cam_id, resolution, color_space, fps)  # zabrani kamery
+        image = self.video_device.getImageRemote(cam)  # porizeni snimku
+	im = image[6] 
         ret = np.fromstring(im, np.uint8)  # konverze na cisla
-        ret = ret.reshape(size[0], size[1], 3)
-        he_start = size[0] - (((100 - cut_delta) * size[0]) / 100)
+	ret = ret.reshape(size[0], size[1], 3)
+	he_start = size[0] - (((100 - cut_delta) * size[0]) / 100)
         wi_start = size[1] - (((100 - cut_delta) * size[1]) / 100)
         ret = ret[he_start: size[0] - he_start: 1, wi_start: size[1] - he_start: 1]
-        self.video_device.unsubscribe("cam")
+        self.video_device.unsubscribe(name)
         if show:
             cv2.imshow("camera", ret)  # zobrazeni vysledneho obrazu
             cv2.waitKey(0)
@@ -157,7 +158,7 @@ class Controller(object):
         self.motion.setStiffnesses("Head", 1.0)
         self.motion.setAngles("HeadYaw", 0, 0.1)
         self.motion.setAngles("HeadPitch", 29.5 * almath.TO_RAD, 0.1)
-        self.motion.setStiffnesses("Head", 0)
+        self.motion.setStiffnesses("Head", 1.0)
 
     # note: control in try-except bloc
     # note: control in try-except bloc
@@ -220,8 +221,8 @@ class Controller(object):
                 num = None
                 if str.isdigit(in_case):
                     num = int(in_case)
-                original_photo = self.getPhoto(3, 0, 0)
-                if num is not None and 0 >= num >= 50:
+                original_photo = self.getPhoto(3, 0, 0)             
+		if num is not None and 0 >= num >= 50:
                     num = None
                 if num is None:
                     num = 0
@@ -244,14 +245,11 @@ class Controller(object):
             print "finish program"
 
     def testHeadMotion(self):
-        cv2.namedWindow("test", cv2.WINDOW_AUTOSIZE)
-        cv2.createTrackbar("yaw", "test", -119.5, 119.5, lambda x: x)
-        cv2.createTrackbar("pitch", "test", -38.5, 29.5, lambda x: x)
         self.motion.setStiffnesses("Head", 1.0)
         try:
             while not None:
-                yaw = cv2.getTrackbarPos("yaw", "test")
-                pitch = cv2.getTrackbarPos("pitch", "test")
+                yaw = int(input(int))
+                pitch = int(input(int))
                 self.motion.setAngles("HeadYaw", yaw * almath.TO_RAD, 0.1)
                 time.sleep(0.5)
                 self.motion.setAngles("HeadPitch", pitch * almath.TO_RAD, 0.1)
@@ -934,8 +932,9 @@ def main(robot_ip, port=9559, count_parts=(4, 3)):
     # controller.startEpisode(tested)
     # controller.testSay()
     # controller.testAnswer()
-    # controller.testGetPhoto()
+    controller.testGetPhoto()
     # controller.testHeadMotion()
+    # controller.watchToFloor()
     # controller.testSensors()
 
 
@@ -976,4 +975,4 @@ if __name__ == "__main__":
         main(args["ip"], args["port"], part_count)
     except Exception as ex:
         print ex
-        sys.exit(1)
+sys.exit(1)
