@@ -20,27 +20,32 @@ class Controller(object):
             print(exception)
             print("FATAL ERROR. Problem 'ALBroker'. Finish program")
             return
+        print "ALBroker - OK"
         try:
             self.detector = ReactToTouch("ReactToTouch")
         except Exception as exception:
             print(exception)
             print("FATAL ERROR. Problem 'ReactToTouch'. Finish program")
             return
+        print "ReactToTouch - OK"
         if robot_ip is None:
             print("incorrect robot ip")
             raise ValueError
+        print "robot ip - OK"
         try:
             self.robotPosture = naoqi.ALProxy("ALRobotPosture", robot_ip, port)
         except Exception as exception:
             print(exception)
             print("FATAL ERROR. Problem: 'ALRobotPosture'. Finish program")
             return
+        print "ALRobotPosture - OK"
         try:
             self.motion = naoqi.ALProxy("ALMotion", robot_ip, port)
         except Exception as exception:
             print(exception)
             print("FATAL ERROR. Problem: 'ALMotion'. Finish program")
             return
+        print "ALMotion - OK"
         try:
             self.speech = naoqi.ALProxy("ALTextToSpeech", robot_ip, port)
             self.speech.setLanguage("Czech")
@@ -48,12 +53,14 @@ class Controller(object):
             print(exception)
             print("ERROR. Problem: 'ALTextToSpeech'. Program continue without sound")
             self.speech = None
+        print "ALTextToSpeech - OK"
         try:
             self.video_device = naoqi.ALProxy("ALVideoDevice", robot_ip, port)
         except Exception as exception:
             print(exception)
             print("FATAL ERROR. Problem: 'ALVideoDevice'. Finish program")
             return
+        print "ALVideoDevice - OK"
         self.original_photo = []
         self.parts_photo = []
         self.count_parts = count_parts
