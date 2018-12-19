@@ -120,7 +120,8 @@ class Controller(object):
     #   |           |
     #   -------------
     def getPhoto(self, resolution=3, cut_delta=10, show=0):
-        self.video_device.unsubscribeAllInstance("cam")
+        # self.video_device.unsubscribeAllInstance("cam")
+        self.video_device.unsubscribe("cam")
         cam_id = 1
         if resolution == 2:
             size = (480, 640)
