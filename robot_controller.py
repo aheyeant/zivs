@@ -164,7 +164,7 @@ class Controller(object):
         if self.speech is None or message is None:
             return
         else:
-            self.speech.say(message)
+            self.speech.say(str(message))
 
     def sayAnswer(self, status_image):
         self.sayMessage("dej tento puzzle na pozice " + str(status_image[0] + 1) + self.directionToText[status_image[1]])
