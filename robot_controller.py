@@ -121,7 +121,7 @@ class Controller(object):
     #   -------------
     def getPhoto(self, resolution=3, cut_delta=10, show=0):
         name = "cam"
-        self.video_device.unsubscribeAllInstance(name)
+        self.video_device.unsubscribeAllInstance("cam")
         cam_id = 1
         if resolution == 2:
             size = (480, 640)
@@ -129,15 +129,15 @@ class Controller(object):
             size = (960, 1280)
         color_space = 13  # format RGB
         fps = 30
-        cam = self.video_device.subscribeCamera(name, cam_id, resolution, color_space, fps)  # zabrani kamery
-        image = self.video_device.getImageRemote(cam)  # porizeni snimku
+        cam = self.video_device.subscribeCamera("cam", cam_id, resolution, color_space, fps)  # zabrani kamery
+        image = self.video_device.getImageRemote("cam")  # porizeni snimku
         im = image[6]
         ret = np.fromstring(im, np.uint8)  # konverze na cisla
         ret = ret.reshape(size[0], size[1], 3)
         he_start = size[0] - (((100 - cut_delta) * size[0]) / 100)
         wi_start = size[1] - (((100 - cut_delta) * size[1]) / 100)
         ret = ret[he_start: size[0] - he_start: 1, wi_start: size[1] - he_start: 1]
-        self.video_device.unsubscribe(cam)
+        self.video_device.unsubscribe("cam")
         if show:
             cv2.imshow("camera", ret)  # zobrazeni vysledneho obrazu
             cv2.waitKey(0)
