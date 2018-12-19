@@ -14,33 +14,42 @@ class Controller(object):
     # if images_name is not none, get images from memory, else get photo from camera
     # note: images_name = (original, [part, name])
     def __init__(self, robot_ip, port=9559, count_parts=(4, 3)):
+        self.robot_ip = robot_ip
+        self.port = port
         try:
             self.my_broker = naoqi.ALBroker("myBroker", "0.0.0.0", 0, robot_ip, port)
         except Exception as exception:
             print(exception)
             print("FATAL ERROR. Problem 'ALBroker'. Finish program")
             return
+        print "ALBroker - OK"
+        global detector
+
         try:
-            self.detector = ReactToTouch("ReactToTouch")
+            detector = ReactToTouch("ReactToTouch")
         except Exception as exception:
             print(exception)
             print("FATAL ERROR. Problem 'ReactToTouch'. Finish program")
             return
+        print "ReactToTouch - OK"
         if robot_ip is None:
             print("incorrect robot ip")
             raise ValueError
+        print "robot ip - OK"
         try:
             self.robotPosture = naoqi.ALProxy("ALRobotPosture", robot_ip, port)
         except Exception as exception:
             print(exception)
             print("FATAL ERROR. Problem: 'ALRobotPosture'. Finish program")
             return
+        print "ALRobotPosture - OK"
         try:
             self.motion = naoqi.ALProxy("ALMotion", robot_ip, port)
         except Exception as exception:
             print(exception)
             print("FATAL ERROR. Problem: 'ALMotion'. Finish program")
             return
+        print "ALMotion - OK"
         try:
             self.speech = naoqi.ALProxy("ALTextToSpeech", robot_ip, port)
             self.speech.setLanguage("Czech")
@@ -48,12 +57,14 @@ class Controller(object):
             print(exception)
             print("ERROR. Problem: 'ALTextToSpeech'. Program continue without sound")
             self.speech = None
+        print "ALTextToSpeech - OK"
         try:
             self.video_device = naoqi.ALProxy("ALVideoDevice", robot_ip, port)
         except Exception as exception:
             print(exception)
             print("FATAL ERROR. Problem: 'ALVideoDevice'. Finish program")
             return
+        print "ALVideoDevice - OK"
         self.original_photo = []
         self.parts_photo = []
         self.count_parts = count_parts
@@ -79,16 +90,16 @@ class Controller(object):
         self.standUp()
         while self.robotPosture.getPosture() != "Stand":
             pass
-        self.say("Ahoj")
+        self.sayMessage("Ahoj")
         time.sleep(0.2)
         self.watchToFloor()
         time.sleep(0.2)
-        self.say("Můžeme začít")
+        self.sayMessage("Můžeme začít")
         time.sleep(0.2)
         self.waitAnswerFromSensors()
         image_original = self.getPhoto(3, 10, tested)
         self.builder.readAndSliceOriginalImage(image_original, tested)
-        self.say("ok")
+        self.sayMessage("ok")
         for i in range(self.count_parts[0] * self.count_parts[1]):
             self.waitAnswerFromSensors()
             image_part = self.getPhoto(3, 10, tested)
@@ -96,7 +107,7 @@ class Controller(object):
             self.builder.assemblyPuzzleFromOneSlices(tested)
             item = self.builder.result[len(self.builder.result) - 1]
             self.sayAnswer(item)
-        self.say("bue")
+        self.sayMessage("bue")
 
     # input: resolution = {3 -> 1280 x 960; 2 -> 640 x 480}
     # input: cut_delta is nim in percents, how pixels cut from one dir
@@ -110,7 +121,8 @@ class Controller(object):
     #   -------------
     def getPhoto(self, resolution=3, cut_delta=10, show=0):
         name = "cam"
-        self.video_device.unsubscribeAllInstance(name)
+        self.video_device.unsubscribeAllInstances(name)
+        self.video_device.unsubscribe(name)
         cam_id = 1
         if resolution == 2:
             size = (480, 640)
@@ -123,18 +135,21 @@ class Controller(object):
         im = image[6]
         ret = np.fromstring(im, np.uint8)  # konverze na cisla
         ret = ret.reshape(size[0], size[1], 3)
+
+        bottom = size[0] - (((100 - 20) * size[0]) / 100)
         he_start = size[0] - (((100 - cut_delta) * size[0]) / 100)
         wi_start = size[1] - (((100 - cut_delta) * size[1]) / 100)
-        ret = ret[he_start: size[0] - he_start: 1, wi_start: size[1] - he_start: 1]
-        self.video_device.unsubscribe(cam)
+        ret = ret[he_start: size[0] - bottom: 1, wi_start: size[1] - he_start: 1]
+        self.video_device.unsubscribe(name)
         if show:
             cv2.imshow("camera", ret)  # zobrazeni vysledneho obrazu
             cv2.waitKey(0)
         return ret
 
-    def waitAnswerFromSensors(self):
-        self.detector.flag = 0
-        while not self.detector.flag:
+    @staticmethod
+    def waitAnswerFromSensors():
+        detector.flag = 0
+        while not detector.flag:
             pass
 
     # note: control in try-except bloc
@@ -145,17 +160,18 @@ class Controller(object):
         self.motion.setStiffnesses("Head", 1.0)
         self.motion.setAngles("HeadYaw", 0, 0.1)
         self.motion.setAngles("HeadPitch", 29.5 * almath.TO_RAD, 0.1)
-        self.motion.setStiffnesses("Head", 0)
+        self.motion.setStiffnesses("Head", 1.0)
 
     # note: control in try-except bloc
-    def say(self, message=None):
+    # note: control in try-except bloc
+    def sayMessage(self, message=None):
         if self.speech is None or message is None:
             return
         else:
-            self.speech.say(message)
+            self.speech.say(str(message))
 
     def sayAnswer(self, status_image):
-        self.say("dej tento puzzle na pozice " + str(status_image[0] + 1) + self.directionToText[status_image[1]])
+        self.sayMessage("dej tento puzzle na pozice " + str(status_image[0] + 1) + self.directionToText[status_image[1]])
 
     # exit: keyboard interrupt
     def testAnswer(self):
@@ -186,10 +202,10 @@ class Controller(object):
         try:
             while not back:
                 print "print text or 'exit' for return"
-                in_text = input()
+                in_text = input(str)
                 if in_text == "exit":
                     back = 1
-                self.say(in_text)
+                self.sayMessage(in_text)
         except KeyboardInterrupt:
             print "finish program"
             return
@@ -208,8 +224,8 @@ class Controller(object):
                 if str.isdigit(in_case):
                     num = int(in_case)
                 original_photo = self.getPhoto(3, 0, 0)
-                if num is not None and 0 >= num >= 50:
-                    num = None
+            if num is not None and 0 >= num >= 50:
+                num = None
                 if num is None:
                     num = 0
                 cut = self.getPhoto(3, num, 0)
@@ -218,26 +234,24 @@ class Controller(object):
                 cv2.waitKey(100)
         except KeyboardInterrupt:
             print "finish program"
-            return
+        return
 
     # exit: keyboard interrupt
-    def testSensors(self):
+    @staticmethod
+    def testSensors():
         try:
             while 1:
-                print self.detector.flag
-                time.sleep(100)
+                print detector.flag
+                time.sleep(0.1)
         except KeyboardInterrupt:
             print "finish program"
 
     def testHeadMotion(self):
-        cv2.namedWindow("test", cv2.WINDOW_AUTOSIZE)
-        cv2.createTrackbar("yaw", "test", -119.5, 119.5, lambda x: x)
-        cv2.createTrackbar("pitch", "test", -38.5, 29.5, lambda x: x)
         self.motion.setStiffnesses("Head", 1.0)
         try:
             while not None:
-                yaw = cv2.getTrackbarPos("yaw", "test")
-                pitch = cv2.getTrackbarPos("pitch", "test")
+                yaw = int(input(int))
+                pitch = int(input(int))
                 self.motion.setAngles("HeadYaw", yaw * almath.TO_RAD, 0.1)
                 time.sleep(0.5)
                 self.motion.setAngles("HeadPitch", pitch * almath.TO_RAD, 0.1)
@@ -917,11 +931,12 @@ class PuzzleBuilder(object):
 def main(robot_ip, port=9559, count_parts=(4, 3)):
     controller = Controller(robot_ip, port, count_parts)
     tested = 0
-    controller.startEpisode(tested)
+    # controller.startEpisode(tested)
     # controller.testSay()
     # controller.testAnswer()
-    # controller.testGetPhoto()
+    controller.testGetPhoto()
     # controller.testHeadMotion()
+    # controller.watchToFloor()
     # controller.testSensors()
 
 
@@ -962,4 +977,4 @@ if __name__ == "__main__":
         main(args["ip"], args["port"], part_count)
     except Exception as ex:
         print ex
-        sys.exit(1)
+sys.exit(1)
