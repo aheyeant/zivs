@@ -160,6 +160,7 @@ class Controller(object):
         self.motion.setStiffnesses("Head", 0)
 
     # note: control in try-except bloc
+    # note: control in try-except bloc
     def sayMessage(self, message=None):
         if self.speech is None or message is None:
             return
