@@ -232,7 +232,7 @@ class Controller(object):
         try:
             while 1:
                 print self.detector.flag
-                time.sleep(100)
+                time.sleep(0.1)
         except KeyboardInterrupt:
             print "finish program"
 
