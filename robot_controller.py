@@ -21,8 +21,10 @@ class Controller(object):
             print("FATAL ERROR. Problem 'ALBroker'. Finish program")
             return
         print "ALBroker - OK"
+        global detector
+
         try:
-            self.detector = ReactToTouch("ReactToTouch")
+            detector = ReactToTouch("ReactToTouch")
         except Exception as exception:
             print(exception)
             print("FATAL ERROR. Problem 'ReactToTouch'. Finish program")
@@ -139,9 +141,10 @@ class Controller(object):
             cv2.waitKey(0)
         return ret
 
-    def waitAnswerFromSensors(self):
-        self.detector.flag = 0
-        while not self.detector.flag:
+    @staticmethod
+    def waitAnswerFromSensors():
+        detector.flag = 0
+        while not detector.flag:
             pass
 
     # note: control in try-except bloc
@@ -228,10 +231,11 @@ class Controller(object):
             return
 
     # exit: keyboard interrupt
-    def testSensors(self):
+    @staticmethod
+    def testSensors():
         try:
             while 1:
-                print self.detector.flag
+                print detector.flag
                 time.sleep(0.1)
         except KeyboardInterrupt:
             print "finish program"
@@ -924,7 +928,7 @@ class PuzzleBuilder(object):
 def main(robot_ip, port=9559, count_parts=(4, 3)):
     controller = Controller(robot_ip, port, count_parts)
     tested = 0
-    controller.startEpisode(tested)
+    # controller.startEpisode(tested)
     # controller.testSay()
     # controller.testAnswer()
     # controller.testGetPhoto()
