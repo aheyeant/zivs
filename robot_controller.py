@@ -14,6 +14,8 @@ class Controller(object):
     # if images_name is not none, get images from memory, else get photo from camera
     # note: images_name = (original, [part, name])
     def __init__(self, robot_ip, port=9559, count_parts=(4, 3)):
+        self.robot_ip = robot_ip
+        self.port = port
         try:
             self.my_broker = naoqi.ALBroker("myBroker", "0.0.0.0", 0, robot_ip, port)
         except Exception as exception:
@@ -88,16 +90,16 @@ class Controller(object):
         self.standUp()
         while self.robotPosture.getPosture() != "Stand":
             pass
-        self.say("Ahoj")
+        self.sayMessage("Ahoj")
         time.sleep(0.2)
         self.watchToFloor()
         time.sleep(0.2)
-        self.say("Můžeme začít")
+        self.sayMessage("Můžeme začít")
         time.sleep(0.2)
         self.waitAnswerFromSensors()
         image_original = self.getPhoto(3, 10, tested)
         self.builder.readAndSliceOriginalImage(image_original, tested)
-        self.say("ok")
+        self.sayMessage("ok")
         for i in range(self.count_parts[0] * self.count_parts[1]):
             self.waitAnswerFromSensors()
             image_part = self.getPhoto(3, 10, tested)
@@ -105,7 +107,7 @@ class Controller(object):
             self.builder.assemblyPuzzleFromOneSlices(tested)
             item = self.builder.result[len(self.builder.result) - 1]
             self.sayAnswer(item)
-        self.say("bue")
+        self.sayMessage("bue")
 
     # input: resolution = {3 -> 1280 x 960; 2 -> 640 x 480}
     # input: cut_delta is nim in percents, how pixels cut from one dir
@@ -158,14 +160,14 @@ class Controller(object):
         self.motion.setStiffnesses("Head", 0)
 
     # note: control in try-except bloc
-    def say(self, message=None):
+    def sayMessage(self, message=None):
         if self.speech is None or message is None:
             return
         else:
             self.speech.say(message)
 
     def sayAnswer(self, status_image):
-        self.say("dej tento puzzle na pozice " + str(status_image[0] + 1) + self.directionToText[status_image[1]])
+        self.sayMessage("dej tento puzzle na pozice " + str(status_image[0] + 1) + self.directionToText[status_image[1]])
 
     # exit: keyboard interrupt
     def testAnswer(self):
@@ -196,10 +198,10 @@ class Controller(object):
         try:
             while not back:
                 print "print text or 'exit' for return"
-                in_text = input()
+                in_text = input(str)
                 if in_text == "exit":
                     back = 1
-                self.say(in_text)
+                self.sayMessage(in_text)
         except KeyboardInterrupt:
             print "finish program"
             return
