@@ -23,10 +23,9 @@ class Controller(object):
             print("FATAL ERROR. Problem 'ALBroker'. Finish program")
             return
         print "ALBroker - OK"
-        global detector
-
+        global ReactToTouch
         try:
-            detector = ReactToTouch("ReactToTouch")
+            ReactToTouch = ReactToTouch("ReactToTouch")
         except Exception as exception:
             print(exception)
             print("FATAL ERROR. Problem 'ReactToTouch'. Finish program")
@@ -108,6 +107,7 @@ class Controller(object):
             item = self.builder.result[len(self.builder.result) - 1]
             self.sayAnswer(item)
         self.sayMessage("bue")
+        self.my_broker.shutdown()
 
     # input: resolution = {3 -> 1280 x 960; 2 -> 640 x 480}
     # input: cut_delta is nim in percents, how pixels cut from one dir
@@ -122,7 +122,6 @@ class Controller(object):
     def getPhoto(self, resolution=3, cut_delta=10, show=0):
         name = "cam"
         self.video_device.unsubscribeAllInstances(name)
-        self.video_device.unsubscribe(name)
         cam_id = 1
         if resolution == 2:
             size = (480, 640)
@@ -135,12 +134,12 @@ class Controller(object):
         im = image[6]
         ret = np.fromstring(im, np.uint8)  # konverze na cisla
         ret = ret.reshape(size[0], size[1], 3)
-
-        bottom = size[0] - (((100 - 20) * size[0]) / 100)
+        bottom_cut_koeficient = 20
+        bottom = size[0] - (((100 - bottom_cut_koeficient) * size[0]) / 100)
         he_start = size[0] - (((100 - cut_delta) * size[0]) / 100)
         wi_start = size[1] - (((100 - cut_delta) * size[1]) / 100)
         ret = ret[he_start: size[0] - bottom: 1, wi_start: size[1] - he_start: 1]
-        self.video_device.unsubscribe(name)
+        self.video_device.unsubscribe(cam)
         if show:
             cv2.imshow("camera", ret)  # zobrazeni vysledneho obrazu
             cv2.waitKey(0)
@@ -148,8 +147,8 @@ class Controller(object):
 
     @staticmethod
     def waitAnswerFromSensors():
-        detector.flag = 0
-        while not detector.flag:
+        ReactToTouch.flag = 0
+        while not ReactToTouch.flag:
             pass
 
     # note: control in try-except bloc
@@ -216,18 +215,11 @@ class Controller(object):
         back = 0
         try:
             while not back:
-                in_case = input()
-                if in_case == "exit":
+                num = input(int)
+                if num == -1:
                     print "finish program"
                     return
-                num = None
-                if str.isdigit(in_case):
-                    num = int(in_case)
                 original_photo = self.getPhoto(3, 0, 0)
-            if num is not None and 0 >= num >= 50:
-                num = None
-                if num is None:
-                    num = 0
                 cut = self.getPhoto(3, num, 0)
                 cv2.imshow("original", original_photo)
                 cv2.imshow("cut " + str(num) + "%", cut)
@@ -241,7 +233,7 @@ class Controller(object):
     def testSensors():
         try:
             while 1:
-                print detector.flag
+                print ReactToTouch.flag
                 time.sleep(0.1)
         except KeyboardInterrupt:
             print "finish program"
